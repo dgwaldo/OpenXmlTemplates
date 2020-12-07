@@ -14,19 +14,25 @@ namespace OpenXMLTemplates.ControlReplacers {
         public override string TagName => "image";
 
         protected override OpenXmlExtensions.ContentControlType ContentControlTypeRestriction =>
-            OpenXmlExtensions.ContentControlType.Picture;
+            OpenXmlExtensions.ContentControlType.Undefined;
 
         protected override string ProcessControl(string variableIdentifier, IVariableSource variableSource,
             ContentControl contentControl, List<string> otherParameters) {
             try {
                 var variable = variableSource.GetVariable(variableIdentifier);
 
-                if (variable == null)
-                    return null;
+                if (variable == null) return null;
 
-                var imagePath = variable.ToString();
-                var byteArray = File.ReadAllBytes(imagePath);
-                return Convert.ToBase64String(byteArray);
+                if (contentControl.Type == OpenXmlExtensions.ContentControlType.Picture) {
+                    var imagePath = variable.ToString();
+                    FileStream fileStream = File.Open(imagePath, FileMode.Open);
+                    BinaryReader br = new BinaryReader(fileStream);
+                    byte[] byteArray = br.ReadBytes(Convert.ToInt32(fileStream.Length));
+                    fileStream.Close();
+                    return Convert.ToBase64String(byteArray);
+                }
+
+                return null;
             } catch (VariableNotFoundException) {
                 return null;
             }
